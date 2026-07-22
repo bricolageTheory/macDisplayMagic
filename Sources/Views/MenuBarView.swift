@@ -168,32 +168,46 @@ public struct MenuBarView: View {
 
             // Quick Actions & Rules Settings Button
             VStack(spacing: 6) {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Button(action: {
                         if let app = NSWorkspace.shared.menuBarOwningApplication {
                             ZoomEngine.shared.execute(action: .reset100, for: app.processIdentifier, appName: app.localizedName ?? "")
                         }
                     }) {
                         Label("Reset 100%", systemImage: "arrow.counterclockwise")
-                            .font(.caption)
+                            .font(.subheadline)
                     }
 
-                    Button(action: {
-                        if let app = NSWorkspace.shared.menuBarOwningApplication {
-                            ZoomEngine.shared.execute(action: .zoomIn(steps: 1), for: app.processIdentifier, appName: app.localizedName ?? "")
-                        }
-                    }) {
-                        Label("Zoom +", systemImage: "plus.magnifyingglass")
-                            .font(.caption)
-                    }
+                    Spacer()
 
-                    Button(action: {
-                        if let app = NSWorkspace.shared.menuBarOwningApplication {
-                            ZoomEngine.shared.execute(action: .zoomOut(steps: 1), for: app.processIdentifier, appName: app.localizedName ?? "")
+                    HStack(spacing: 4) {
+                        Text("Zoom:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Button(action: {
+                            if let app = NSWorkspace.shared.menuBarOwningApplication {
+                                ZoomEngine.shared.execute(action: .zoomIn(steps: 1), for: app.processIdentifier, appName: app.localizedName ?? "")
+                            }
+                        }) {
+                            Image(systemName: "plus")
+                                .font(.subheadline.bold())
+                                .frame(width: 24, height: 24)
                         }
-                    }) {
-                        Label("Zoom -", systemImage: "minus.magnifyingglass")
-                            .font(.caption)
+                        .buttonStyle(.bordered)
+                        .help("Zoom In (Cmd + '+')")
+
+                        Button(action: {
+                            if let app = NSWorkspace.shared.menuBarOwningApplication {
+                                ZoomEngine.shared.execute(action: .zoomOut(steps: 1), for: app.processIdentifier, appName: app.localizedName ?? "")
+                            }
+                        }) {
+                            Image(systemName: "minus")
+                                .font(.subheadline.bold())
+                                .frame(width: 24, height: 24)
+                        }
+                        .buttonStyle(.bordered)
+                        .help("Zoom Out (Cmd + '-')")
                     }
                 }
 
