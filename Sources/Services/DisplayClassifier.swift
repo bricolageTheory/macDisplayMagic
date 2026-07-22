@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import Foundation
 
 public final class DisplayClassifier {
@@ -39,9 +40,20 @@ public final class DisplayClassifier {
     }
 
     public static func displayIDString(screen: NSScreen) -> String {
-        if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID {
-            return "\(screenNumber)"
+        return permanentHardwareID(for: screen)
+    }
+
+    /// Permanent multi-condition EDID composite key combining Vendor ID, Model Number, Serial Number, and Commercial Name.
+    public static func permanentHardwareID(for screen: NSScreen) -> String {
+        guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+            return screen.localizedName
         }
-        return screen.localizedName
+
+        let vendor = CGDisplayVendorNumber(displayID)
+        let model = CGDisplayModelNumber(displayID)
+        let serial = CGDisplaySerialNumber(displayID)
+        let cleanName = screen.localizedName.replacingOccurrences(of: " ", with: "_").replacingOccurrences(of: "/", with: "_")
+
+        return "Vendor\(vendor)_Model\(model)_SN\(serial)_\(cleanName)"
     }
 }

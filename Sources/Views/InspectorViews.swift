@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct MonitorInspectorView: View {
     public let details: DisplayDetails
+    public var onCreateAutoMinimizeRuleForMonitor: ((String) -> Void)? = nil
     @Environment(\.dismiss) var dismiss
 
     public var body: some View {
@@ -13,7 +14,9 @@ public struct MonitorInspectorView: View {
                     .foregroundColor(details.isBuiltIn ? .green : .blue)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(details.name)
+                    let hwID = "Vendor\(details.vendorID)_Model\(details.modelID)_SN\(details.serialNumber)_\(details.name.replacingOccurrences(of: " ", with: "_"))"
+                    let displayName = DisplayHistoryStore.shared.displayName(for: hwID, fallback: details.name)
+                    Text(displayName)
                         .font(.headline)
                         .bold()
                     Text(details.category.rawValue)
@@ -48,16 +51,30 @@ public struct MonitorInspectorView: View {
 
             Spacer()
 
-            HStack {
-                Spacer()
+            VStack(spacing: 8) {
+                if !details.isBuiltIn, let onCreate = onCreateAutoMinimizeRuleForMonitor {
+                    Button(action: {
+                        dismiss()
+                        let hwID = "Vendor\(details.vendorID)_Model\(details.modelID)_SN\(details.serialNumber)_\(details.name.replacingOccurrences(of: " ", with: "_"))"
+                        onCreate(hwID)
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.down.right.and.arrow.up.left")
+                            Text("Create AutoMinimize Rule for \(details.name)")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
                 Button("Close") {
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
             }
             .padding()
         }
-        .frame(width: 420, height: 490)
+        .frame(width: 420, height: 520)
     }
 
     private func infoRow(title: String, value: String) -> some View {
@@ -80,6 +97,7 @@ public struct FocusedAppInspectorView: View {
     public let screenName: String
     public let screenCategory: DisplayCategory
     public var onCreateRule: (String) -> Void
+    public var onCreateAutoMinimizeRule: ((String) -> Void)? = nil
     @Environment(\.dismiss) var dismiss
 
     public var body: some View {
@@ -116,7 +134,8 @@ public struct FocusedAppInspectorView: View {
             VStack(spacing: 8) {
                 infoRow(title: "Application Name:", value: appName)
                 infoRow(title: "Bundle Identifier:", value: bundleID.isEmpty ? "N/A" : bundleID)
-                infoRow(title: "Current Monitor:", value: screenName)
+                let effectiveScreenName = DisplayHistoryStore.shared.displayName(for: screenName, fallback: screenName)
+                infoRow(title: "Current Monitor:", value: effectiveScreenName)
                 infoRow(title: "Monitor Category:", value: screenCategory.rawValue)
             }
             .padding(.horizontal)
@@ -136,16 +155,30 @@ public struct FocusedAppInspectorView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+
+                    if let onCreateAuto = onCreateAutoMinimizeRule {
+                        Button(action: {
+                            dismiss()
+                            onCreateAuto(bundleID)
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.down.right.and.arrow.up.left")
+                                Text("Create AutoMinimize Rule for \(appName)")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
 
                 Button("Close") {
                     dismiss()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
             }
             .padding()
         }
-        .frame(width: 360, height: 320)
+        .frame(width: 360, height: 360)
     }
 
     private func infoRow(title: String, value: String) -> some View {

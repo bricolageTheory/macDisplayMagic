@@ -10,7 +10,7 @@ public enum ClosingWindowAction: String, Codable, CaseIterable, Identifiable {
     public var id: String { rawValue }
 }
 
-/// Reactive singleton model managing global application preferences, launch at login, and window behavior.
+/// Reactive singleton model managing global application preferences, launch at login, keepZooming, noZoomingDomain, and AutoMinimize.
 public final class AppSettings: ObservableObject {
     public static let shared = AppSettings()
 
@@ -38,9 +38,54 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// Controls optional continuous tab zooming (keepZooming) feature.
+    @Published public var enableKeepZooming: Bool {
+        didSet {
+            UserDefaults.standard.set(enableKeepZooming, forKey: "enableKeepZooming")
+        }
+    }
+
+    /// Controls optional domain zoom exclusion (noZoomingDomain) feature for web browsers.
+    @Published public var enableNoZoomingDomain: Bool {
+        didSet {
+            UserDefaults.standard.set(enableNoZoomingDomain, forKey: "enableNoZoomingDomain")
+        }
+    }
+
+    /// List of domain names excluded from automatic zooming (e.g. netflix.com, youtube.com).
+    @Published public var noZoomDomains: [String] {
+        didSet {
+            UserDefaults.standard.set(noZoomDomains, forKey: "noZoomDomains")
+        }
+    }
+
+    /// Controls optional AutoMinimize feature on external monitor connection.
+    @Published public var enableAutoMinimize: Bool {
+        didSet {
+            UserDefaults.standard.set(enableAutoMinimize, forKey: "enableAutoMinimize")
+        }
+    }
+
+    /// List of configured AutoMinimize rules.
+    @Published public var autoMinimizeRules: [AutoMinimizeRule] {
+        didSet {
+            saveAutoMinimizeRules()
+        }
+    }
+
+    /// Controls ADA accessibility scaling for the main status menu (85% to 160%).
+    @Published public var menuScaleFactor: Double {
+        didSet {
+            UserDefaults.standard.set(menuScaleFactor, forKey: "menuScaleFactor")
+        }
+    }
+
+    private let autoMinimizeStorageKey = "macDisplayMagic.autoMinimizeRules"
+
     // MARK: - Initialization
     
     public init() {
+        self.menuScaleFactor = UserDefaults.standard.object(forKey: "menuScaleFactor") as? Double ?? 1.0
         self.showMenubarIconAtStartup = UserDefaults.standard.object(forKey: "showMenubarIconAtStartup") as? Bool ?? true
         self.startAtLogin = UserDefaults.standard.object(forKey: "startAtLogin") as? Bool ?? false
         if let raw = UserDefaults.standard.string(forKey: "whenClosingMainWindow"),
@@ -49,11 +94,54 @@ public final class AppSettings: ObservableObject {
         } else {
             self.whenClosingMainWindow = .minimizeToMenuBar
         }
+
+        self.enableKeepZooming = UserDefaults.standard.object(forKey: "enableKeepZooming") as? Bool ?? false
+        self.enableNoZoomingDomain = UserDefaults.standard.object(forKey: "enableNoZoomingDomain") as? Bool ?? true
+        self.noZoomDomains = UserDefaults.standard.array(forKey: "noZoomDomains") as? [String] ?? [
+            "netflix.com",
+            "disneyplus.com",
+            "youtube.com",
+            "hulu.com",
+            "primevideo.com",
+            "twitch.tv"
+        ]
+
+        self.enableAutoMinimize = UserDefaults.standard.object(forKey: "enableAutoMinimize") as? Bool ?? false
+        if let data = UserDefaults.standard.data(forKey: autoMinimizeStorageKey),
+           let decoded = try? JSONDecoder().decode([AutoMinimizeRule].self, from: data) {
+            self.autoMinimizeRules = decoded
+        } else {
+            self.autoMinimizeRules = [
+                AutoMinimizeRule(
+                    name: "Minimize Music & Social Apps",
+                    targetBundleIDs: ["com.apple.Music", "com.spotify.client", "com.slack.Slack"],
+                    windowTitlePattern: "",
+                    isEnabled: true
+                )
+            ]
+        }
+    }
+
+    public func saveAutoMinimizeRules() {
+        if let data = try? JSONEncoder().encode(autoMinimizeRules) {
+            UserDefaults.standard.set(data, forKey: autoMinimizeStorageKey)
+        }
+    }
+
+    // MARK: - Domain Exclusion Helper Methods
+    
+    public func addNoZoomDomain(_ domain: String) {
+        let clean = domain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !clean.isEmpty, !noZoomDomains.contains(clean) else { return }
+        noZoomDomains.append(clean)
+    }
+
+    public func removeNoZoomDomain(_ domain: String) {
+        noZoomDomains.removeAll(where: { $0.lowercased() == domain.lowercased() })
     }
 
     // MARK: - Launch at Login Management
     
-    /// Registers or unregisters the application service with macOS ServiceManagement API.
     private func updateLaunchAtLogin(enabled: Bool) {
         if #available(macOS 13.0, *) {
             do {

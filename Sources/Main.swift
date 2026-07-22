@@ -26,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate
 
         _ = AccessibilityManager.shared.checkAndRequestAccessibility()
         NotificationService.shared.requestAuthorization()
+        LocationService.shared.requestAuthorization()
+        DisplayHistoryStore.shared.syncCurrentlyConnectedDisplays()
         AppCatalog.warmUpCache()
     }
 
@@ -52,6 +54,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate
     func displayDidConnect(screen: NSScreen) {
         DisplayInfoProvider.invalidateCache()
         print("[macDisplayMagic] Display connected: \(screen.localizedName)")
+        DisplayHistoryStore.shared.logConnection(screen: screen)
+        AutoMinimizeService.shared.executeAutoMinimize()
         windowTracker.checkActiveWindowScreen()
     }
 
@@ -66,33 +70,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate
     func displayConfigurationDidChange() {
         DisplayInfoProvider.invalidateCache()
         print("[macDisplayMagic] Display configuration updated.")
+        for screen in NSScreen.screens {
+            let details = DisplayInfoProvider.details(for: screen)
+            if !details.isBuiltIn {
+                DisplayHistoryStore.shared.logConnection(screen: screen)
+            }
+        }
+        AutoMinimizeService.shared.executeAutoMinimize()
         windowTracker.checkActiveWindowScreen()
     }
 
     // MARK: - Settings Window Management
     
     /// Opens or focuses the main Settings & Configuration window.
-    /// - Parameter presetBundleID: Optional application bundle ID to pre-fill in the rule editor.
-    func openSettingsWindow(presetBundleID: String? = nil) {
+    func openSettingsWindow(presetBundleID: String? = nil, presetAutoMinimizeAppID: String? = nil, presetAutoMinimizeHardwareID: String? = nil) {
         if let keyWindow = NSApp.keyWindow, keyWindow != settingsWindow {
             keyWindow.orderOut(nil)
         }
 
-        if settingsWindow == nil || presetBundleID != nil {
-            let view = RulesConfigView(presetBundleID: presetBundleID)
-            let hostingController = NSHostingController(rootView: view)
+        let view = RulesConfigView(
+            presetBundleID: presetBundleID,
+            presetAutoMinimizeAppID: presetAutoMinimizeAppID,
+            presetAutoMinimizeHardwareID: presetAutoMinimizeHardwareID
+        )
+        let hostingController = NSHostingController(rootView: view)
 
-            if settingsWindow == nil {
-                let window = NSWindow(contentViewController: hostingController)
-                window.title = "macDisplayMagic Settings"
-                window.styleMask = NSWindow.StyleMask([.titled, .closable, .resizable, .miniaturizable])
-                window.center()
-                window.isReleasedWhenClosed = false
-                window.delegate = self
-                settingsWindow = window
-            } else {
-                settingsWindow?.contentViewController = hostingController
-            }
+        if settingsWindow == nil {
+            let window = NSWindow(contentViewController: hostingController)
+            window.title = "macDisplayMagic Settings"
+            window.styleMask = NSWindow.StyleMask([.titled, .closable, .resizable, .miniaturizable])
+            window.center()
+            window.isReleasedWhenClosed = false
+            window.delegate = self
+            settingsWindow = window
+        } else {
+            settingsWindow?.contentViewController = hostingController
         }
 
         let topLevel = NSWindow.Level(Int(NSWindow.Level.statusBar.rawValue) + 1)
@@ -107,12 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        if (notification.object as? NSWindow) == settingsWindow {
-            if AppSettings.shared.whenClosingMainWindow == .quitApp {
-                print("[macDisplayMagic] User preference set to Quit on closing main window. Terminating app...")
-                NSApplication.shared.terminate(nil)
-            }
-        }
+        // Closing the settings window simply closes the settings window. The app continues running in the menu bar.
     }
 }
 
@@ -131,6 +138,12 @@ struct MacDisplayMagicApp: App {
                 },
                 onOpenSettingsWithPreset: { presetBundleID in
                     appDelegate.openSettingsWindow(presetBundleID: presetBundleID)
+                },
+                onOpenAutoMinimizePresetApp: { bundleID in
+                    appDelegate.openSettingsWindow(presetAutoMinimizeAppID: bundleID)
+                },
+                onOpenAutoMinimizePresetMonitor: { hardwareID in
+                    appDelegate.openSettingsWindow(presetAutoMinimizeHardwareID: hardwareID)
                 }
             )
         }

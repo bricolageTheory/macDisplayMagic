@@ -1,21 +1,48 @@
 # macDisplayMagic 🖥️✨
 
-**macDisplayMagic** is a lightweight, display-aware macOS utility that automatically manages application zoom levels when windows move between MacBook Retina displays and high-density external monitors (4K, 5K, 8K, and UltraWide displays).
+**Display-Aware Application Zoom Manager** • `v1.1.0`
+
+**macDisplayMagic** is a lightweight, display-aware macOS utility that automatically manages application and web tab zoom levels when windows move between MacBook Retina displays and high-density external monitors (4K, 5K, 8K, and UltraWide displays).
+
+<p align="center">
+  <img src="Resources/main_menu.png" width="360" alt="macDisplayMagic Main Menu Interface">
+</p>
 
 ---
 
 ## 🌟 Key Features
 
-- 🎯 **Automatic Window Transition Detection**: Seamlessly detects when an application window moves across displays and applies pre-configured zoom rules (`Cmd + '+'`, `Cmd + '-'`, or `Cmd + 0`).
-- ⚡ **Instant 0ms Menu Bar Interface**: In-memory RAM caching eliminates kernel scanning latency, ensuring instant menu bar response.
-- 🔬 **Full-Tree IOKit Hardware Inspector**: Reads monitor EDID attributes, serial numbers, manufacturer details, refresh rates (60 Hz, 120 Hz ProMotion), rotation orientation, and maps internal chassis codes to commercial retail model variants (e.g., `LG HDR 4K (32UP83A / 32UN880 / 32UN88)`).
-- 🏷️ **Hardware & Serial Specific Zoom Rules**: Target rules to broad display resolution categories (e.g. `4K UHD`, `Built-in Retina`) or restrict rules to specific physical monitor models and serial numbers.
-- 🔍 **Interactive Focus & Hardware Popovers**: Click any connected monitor card to inspect detailed hardware specifications or click the active window card to create application-specific rules with one click.
-- ⚙️ **General Application Preferences**:
-  - **Show Menubar Icon at Startup**: Toggle menu bar icon visibility.
-  - **Start App when system starts**: Native macOS Launch at Login integration (`SMAppService`).
-  - **When Closing Main Window**: Choose whether closing the settings window keeps the app running in the background or quits the application.
-- 🎨 **Apple Human Interface Guidelines**: Sleek macOS design system with unified color coding (`Color.secondary` gray for built-in displays, `Color.blue` for external displays).
+- 🎯 **Automatic Window & Display Transition Detection**: Seamlessly detects when an application window moves across displays and applies pre-configured zoom rules (`Cmd + '+'`, `Cmd + '-'`, or `Cmd + 0`).
+- 🎨 **Dark Liquid Glass UI macOS App Icon**: Premium 3D liquid glass squircle icon with glowing cyan monitor and MacBook silhouettes, registered system-wide with macOS Launch Services.
+- 🎛️ **11-Step Menu Size Zoom Engine (75% to 210%)**: Scale the menu bar popover interface across 11 discrete scale levels (`75%`, `85%`, `95%`, `100%`, `112%`, `125%`, `138%`, `150%`, `165%`, `185%`, `210%`) with compact ADA/WCAG-compliant controls (`[ ➖ ] [ ➕ ]`) and zero text truncation.
+- 🌐 **Continuous Tab Zooming (`keepZooming`)**: Intercepts tab switches inside multi-tab web browsers (Google Chrome, Safari, Firefox, Arc, Brave) and applies display zoom to newly focused tabs.
+- 🚫 **Domain Zoom Exclusions (`noZoomingDomain`)**: Define exclusion lists for media streaming or specific web domains (e.g. `netflix.com`, `youtube.com`, `disneyplus.com`) to bypass auto-zooming.
+- ⚡ **Non-Blocking Async Domain Extraction**: High-performance targeted Accessibility queries (`kAXDocumentAttribute` / `kAXURLAttribute`) executed on a background queue, guaranteeing 0ms main thread UI latency.
+- 🛰️ **Location Provenance & Connection Logs**: Logs physical display connection events tagged with location metadata and visual provenance icons:
+  - 🛰️ **GPS / CoreLocation**: Physical GPS coordinates & city resolution.
+  - 🌐 **Network IP**: GeoIP network location fallback.
+  - 🕒 **System Timezone**: System timezone location fallback.
+  - ❓ **Pending Approval**: Awaiting macOS location permission.
+  - 🚫 **Disabled**: Location tracking disabled by user.
+  Includes a **LOCATION SOURCE LEGENDS** bar and detailed inspector diagnostics card.
+- 🔬 **Full-Tree IOKit Hardware Inspector**: Reads monitor EDID attributes, serial numbers, manufacturer details, refresh rates (60 Hz, 120 Hz ProMotion), rotation orientation, and maps chassis codes to retail model names (e.g. `LG HDR 4K (32UP83A / 32UN880 / 32UN88)`).
+- 🏷️ **Hardware & Serial Specific Zoom Rules**: Target rules to broad resolution categories (e.g. `4K UHD`, `Built-in Retina`) or restrict rules to specific physical monitor models and serial numbers.
+- 💻 **Auto-Minimize Windows on Connection**: Automatically minimize open windows of designated applications when connecting to specific external monitors.
+
+---
+
+## ⚙️ How It Works
+
+### Rule Evaluation Decision Tree
+
+When an application window or tab transitions to another display, **macDisplayMagic** evaluates zoom rules according to a strict priority hierarchy:
+
+1. **App + Specific Monitor Serial Number** *(Highest Priority)*
+2. **App + Specific Monitor Model Name**
+3. **App + Display Resolution Category**
+4. **Global + Specific Monitor Serial Number**
+5. **Global + Specific Monitor Model Name**
+6. **Global + Display Resolution Category** *(Fallback)*
 
 ---
 
@@ -33,43 +60,30 @@
    cd macDisplayMagic
    ```
 
-2. **Build and Create Application Bundle**:
+2. **Build and Install Application Bundle**:
    ```bash
-   bash build_app.sh
+   bash build_app.sh --install
    ```
-   *(The script will interactively ask if you want to copy `macDisplayMagic.app` to your `/Applications` directory. Pass `bash build_app.sh --install` to automatically install non-interactively.)*
+   *(Compiles high-DPI `AppIcon.icns`, builds `macDisplayMagic.app`, installs to `/Applications`, and registers with macOS Launch Services.)*
 
 3. **Launch the Application**:
    ```bash
-   open /Applications/macDisplayMagic.app   # or open dist/macDisplayMagic.app
+   open /Applications/macDisplayMagic.app
    ```
 
 ---
 
-## ⚙️ How It Works
+## 🔒 Privacy & Permissions
 
-### Rule Evaluation Decision Tree
-
-When an application window transitions to another display, **macDisplayMagic** evaluates rules according to a strict priority hierarchy:
-
-1. **App + Specific Monitor Serial Number** *(Highest Priority)*
-2. **App + Specific Monitor Model Name**
-3. **App + Display Resolution Category**
-4. **Global + Specific Monitor Serial Number**
-5. **Global + Specific Monitor Model Name**
-6. **Global + Display Resolution Category** *(Fallback)*
-
-### Accessibility Permission
-
-**macDisplayMagic** requires standard macOS Accessibility permissions (`System Settings > Privacy & Security > Accessibility`) to observe active window positions and send macOS zoom keyboard shortcuts (`Cmd + '+'`, `Cmd + '-'`, `Cmd + 0`).
+- **Accessibility Permission**: Required (`System Settings > Privacy & Security > Accessibility`) to observe active window positions and send macOS zoom keyboard shortcuts (`Cmd + '+'`, `Cmd + '-'`, `Cmd + 0`).
+- **Location Permission (Optional)**: Used solely to tag physical connection logs (e.g. Office, Home). Your location data is stored strictly on your Mac in local `UserDefaults` and is **NEVER** transmitted or uploaded anywhere.
 
 ---
 
-## 🛠️ Architecture
+## 🛠️ Architecture & Technologies
 
-- **Core Frameworks**: Swift, SwiftUI, AppKit, CoreGraphics, IOKit, ServiceManagement
-- **Single Instance Enforcement**: Enforces single-instance execution via bundle identifier and process name matching.
-- **Cache Management**: Automatically invalidates RAM hardware cache when external displays are connected, disconnected, or reconfigured.
+- **Language & Frameworks**: Swift, SwiftUI, AppKit, CoreGraphics, CoreLocation, IOKit, ServiceManagement
+- **Storage Isolation**: Local `UserDefaults` storage (`~/Library/Preferences/com.nicklee.macDisplayMagic.plist`) ensures personal connection logs and custom rules are never pushed to Git.
 
 ---
 
@@ -79,4 +93,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Author**: coolnick ([coolnickldd@gmail.com](mailto:coolnickldd@gmail.com))
+**Author**: Nick Lee ([coolnickldd@gmail.com](mailto:coolnickldd@gmail.com))
