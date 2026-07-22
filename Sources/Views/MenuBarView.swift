@@ -168,7 +168,7 @@ public struct MenuBarView: View {
 
             // Quick Actions & Rules Settings Button
             VStack(spacing: 6) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Button(action: {
                         if let app = NSWorkspace.shared.menuBarOwningApplication {
                             ZoomEngine.shared.execute(action: .reset100, for: app.processIdentifier, appName: app.localizedName ?? "")
@@ -184,6 +184,15 @@ public struct MenuBarView: View {
                         }
                     }) {
                         Label("Zoom +", systemImage: "plus.magnifyingglass")
+                            .font(.caption)
+                    }
+
+                    Button(action: {
+                        if let app = NSWorkspace.shared.menuBarOwningApplication {
+                            ZoomEngine.shared.execute(action: .zoomOut(steps: 1), for: app.processIdentifier, appName: app.localizedName ?? "")
+                        }
+                    }) {
+                        Label("Zoom -", systemImage: "minus.magnifyingglass")
                             .font(.caption)
                     }
                 }
