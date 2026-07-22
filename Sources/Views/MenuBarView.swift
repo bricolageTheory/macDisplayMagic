@@ -176,9 +176,9 @@ public struct MenuBarView: View {
                     }) {
                         Label("Reset 100%", systemImage: "arrow.counterclockwise")
                             .font(.subheadline)
+                            .frame(height: 22)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.regular)
 
                     Spacer()
 
@@ -194,10 +194,9 @@ public struct MenuBarView: View {
                         }) {
                             Image(systemName: "plus")
                                 .font(.subheadline.bold())
-                                .frame(width: 16)
+                                .frame(width: 18, height: 22)
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.regular)
                         .help("Zoom In (Cmd + '+')")
 
                         Button(action: {
@@ -207,10 +206,9 @@ public struct MenuBarView: View {
                         }) {
                             Image(systemName: "minus")
                                 .font(.subheadline.bold())
-                                .frame(width: 16)
+                                .frame(width: 18, height: 22)
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.regular)
                         .help("Zoom Out (Cmd + '-')")
                     }
                 }
