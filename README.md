@@ -4,6 +4,8 @@
 
 **macDisplayMagic** is a lightweight, display-aware macOS utility that automatically manages application and web tab zoom levels when windows move between MacBook Retina displays and high-density external monitors (4K, 5K, 8K, and UltraWide displays).
 
+💡 *Vibe-coded using Gemini 3.5 Flash (High) for testing & experimentation.* 
+
 <p align="center">
   <img src="Resources/main_menu.png" width="360" alt="macDisplayMagic Main Menu Interface">
 </p>
