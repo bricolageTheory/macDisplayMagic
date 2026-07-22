@@ -37,10 +37,11 @@
    ```bash
    bash build_app.sh
    ```
+   *(The script will interactively ask if you want to copy `macDisplayMagic.app` to your `/Applications` directory. Pass `bash build_app.sh --install` to automatically install non-interactively.)*
 
 3. **Launch the Application**:
    ```bash
-   open dist/macDisplayMagic.app
+   open /Applications/macDisplayMagic.app   # or open dist/macDisplayMagic.app
    ```
 
 ---

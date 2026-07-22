@@ -37,3 +37,27 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
 EOF
 
 echo "==> App Bundle built successfully at $APP_DIR"
+
+INSTALL_APP=false
+
+# Check for non-interactive --install or -i flags
+for arg in "$@"; do
+    if [ "$arg" == "--install" ] || [ "$arg" == "-i" ]; then
+        INSTALL_APP=true
+    fi
+done
+
+# If flag not passed, ask interactively if TTY is available
+if [ "$INSTALL_APP" = false ] && [ -t 0 ]; then
+    read -p "Do you want to copy macDisplayMagic.app to /Applications? (y/N): " choice < /dev/tty
+    case "$choice" in
+        [Yy]* ) INSTALL_APP=true ;;
+        * ) INSTALL_APP=false ;;
+    esac
+fi
+
+if [ "$INSTALL_APP" = true ]; then
+    echo "==> Copying macDisplayMagic.app to /Applications/..."
+    cp -R "$APP_DIR" /Applications/
+    echo "==> Successfully installed macDisplayMagic.app to /Applications/macDisplayMagic.app!"
+fi
