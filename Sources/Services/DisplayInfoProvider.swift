@@ -3,6 +3,7 @@ import CoreGraphics
 import Foundation
 import IOKit
 
+/// Detailed specifications and hardware attributes of a display screen.
 public struct DisplayDetails: Identifiable, Hashable {
     public var id: String { "\(displayID)" }
     public let name: String
@@ -29,17 +30,28 @@ public struct DisplayDetails: Identifiable, Hashable {
     }
 }
 
+/// Provider service querying IOKit registry tree and CoreGraphics for display hardware details,
+/// EDID commercial model variant mapping, refresh rate, and connection interface.
 public final class DisplayInfoProvider {
+    
+    // MARK: - RAM Memory Cache
+    
     private static var detailsCache: [CGDirectDisplayID: DisplayDetails] = [:]
 
+    /// Invalidates the RAM memory details cache (triggered on display hot-plug or reconfig events).
     public static func invalidateCache() {
         detailsCache.removeAll()
     }
 
+    // MARK: - Core Query Method
+    
+    /// Queries hardware specifications for a target `NSScreen` (serves instantly from memory cache if available).
+    /// - Parameter screen: The target `NSScreen` to query.
+    /// - Returns: Complete `DisplayDetails` hardware specifications struct.
     public static func details(for screen: NSScreen) -> DisplayDetails {
         let screenNumber = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) ?? 0
 
-        // 0ms instant RAM cache return
+        // 0ms instant RAM cache lookup
         if let cached = detailsCache[screenNumber] {
             return cached
         }
@@ -128,6 +140,9 @@ public final class DisplayInfoProvider {
         return result
     }
 
+    // MARK: - Private Helper Methods
+    
+    /// Scans the full IOKit service registry for EDID ProductAttributes and Metadata.
     private static func fetchIOKitInfo(vendorID: UInt32, modelID: UInt32, isBuiltIn: Bool) -> (modelName: String, serialNumber: String, yearOfManufacture: Int?, dfpType: String?) {
         if isBuiltIn {
             return ("Apple Built-in Retina Display", "N/A (Built-in)", nil, "Internal")
@@ -201,6 +216,7 @@ public final class DisplayInfoProvider {
         return (finalModel, finalSerial, foundYear, foundDFP)
     }
 
+    /// Maps hardware chassis EDID SinkDeviceID to commercial market variants.
     private static func resolveModelVariants(sinkID: String?) -> String? {
         guard let sink = sinkID, !sink.isEmpty else { return nil }
 
@@ -221,6 +237,7 @@ public final class DisplayInfoProvider {
         return knownVariants[sink] ?? sink
     }
 
+    /// Translates UInt32 vendor ID into human-readable manufacturer name.
     private static func lookupVendorName(vendorID: UInt32, isBuiltIn: Bool) -> String {
         if isBuiltIn || vendorID == 0x0610 {
             return "Apple Inc."

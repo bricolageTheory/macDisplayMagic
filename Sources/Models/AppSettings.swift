@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import ServiceManagement
 
+/// Actions available when the user closes the main configuration window.
 public enum ClosingWindowAction: String, Codable, CaseIterable, Identifiable {
     case minimizeToMenuBar = "Keep Running in Menu Bar"
     case quitApp = "Quit Application"
@@ -9,15 +10,20 @@ public enum ClosingWindowAction: String, Codable, CaseIterable, Identifiable {
     public var id: String { rawValue }
 }
 
+/// Reactive singleton model managing global application preferences, launch at login, and window behavior.
 public final class AppSettings: ObservableObject {
     public static let shared = AppSettings()
 
+    // MARK: - Published Properties
+    
+    /// Controls whether the status item icon is shown in the macOS menu bar on startup.
     @Published public var showMenubarIconAtStartup: Bool {
         didSet {
             UserDefaults.standard.set(showMenubarIconAtStartup, forKey: "showMenubarIconAtStartup")
         }
     }
 
+    /// Controls whether macDisplayMagic launches automatically when system starts.
     @Published public var startAtLogin: Bool {
         didSet {
             UserDefaults.standard.set(startAtLogin, forKey: "startAtLogin")
@@ -25,12 +31,15 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// Action preference executed when the user closes the Settings window.
     @Published public var whenClosingMainWindow: ClosingWindowAction {
         didSet {
             UserDefaults.standard.set(whenClosingMainWindow.rawValue, forKey: "whenClosingMainWindow")
         }
     }
 
+    // MARK: - Initialization
+    
     public init() {
         self.showMenubarIconAtStartup = UserDefaults.standard.object(forKey: "showMenubarIconAtStartup") as? Bool ?? true
         self.startAtLogin = UserDefaults.standard.object(forKey: "startAtLogin") as? Bool ?? false
@@ -42,6 +51,9 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    // MARK: - Launch at Login Management
+    
+    /// Registers or unregisters the application service with macOS ServiceManagement API.
     private func updateLaunchAtLogin(enabled: Bool) {
         if #available(macOS 13.0, *) {
             do {

@@ -1,28 +1,20 @@
 import SwiftUI
 import AppKit
 
-class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate {
+/// Application Delegate for macDisplayMagic handling app lifecycle, single instance enforcement,
+/// display reconfiguration events, and settings window management.
+final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate {
+    
+    // MARK: - Properties
+    
     let windowTracker = WindowTracker()
     let displayWatcher = DisplayWatcher()
     var settingsWindow: NSWindow?
 
+    // MARK: - Application Lifecycle
+    
     func applicationWillFinishLaunching(_ notification: Notification) {
         enforceSingleInstance()
-    }
-
-    private func enforceSingleInstance() {
-        let currentApp = NSRunningApplication.current
-        let runningApps = NSWorkspace.shared.runningApplications.filter { app in
-            let matchesBundleID = currentApp.bundleIdentifier != nil && app.bundleIdentifier == currentApp.bundleIdentifier
-            let matchesName = app.localizedName == "macDisplayMagic"
-            return (matchesBundleID || matchesName) && app.processIdentifier != currentApp.processIdentifier
-        }
-
-        if let existingApp = runningApps.first {
-            print("[macDisplayMagic] Another instance of macDisplayMagic is already running (PID: \(existingApp.processIdentifier)). Terminating duplicate instance...")
-            existingApp.activate(options: [.activateIgnoringOtherApps])
-            exit(0)
-        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -37,6 +29,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate {
         AppCatalog.warmUpCache()
     }
 
+    // MARK: - Single Instance Guard
+    
+    /// Enforces single-instance execution by checking running applications matching bundle ID or process name.
+    private func enforceSingleInstance() {
+        let currentApp = NSRunningApplication.current
+        let runningApps = NSWorkspace.shared.runningApplications.filter { app in
+            let matchesBundleID = currentApp.bundleIdentifier != nil && app.bundleIdentifier == currentApp.bundleIdentifier
+            let matchesName = app.localizedName == "macDisplayMagic"
+            return (matchesBundleID || matchesName) && app.processIdentifier != currentApp.processIdentifier
+        }
+
+        if let existingApp = runningApps.first {
+            print("[macDisplayMagic] Another instance of macDisplayMagic is already running (PID: \(existingApp.processIdentifier)). Activating existing instance and exiting...")
+            existingApp.activate(options: [.activateIgnoringOtherApps])
+            exit(0)
+        }
+    }
+
+    // MARK: - DisplayWatcherDelegate Methods
+    
     func displayDidConnect(screen: NSScreen) {
         DisplayInfoProvider.invalidateCache()
         print("[macDisplayMagic] Display connected: \(screen.localizedName)")
@@ -57,6 +69,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate {
         windowTracker.checkActiveWindowScreen()
     }
 
+    // MARK: - Settings Window Management
+    
+    /// Opens or focuses the main Settings & Configuration window.
+    /// - Parameter presetBundleID: Optional application bundle ID to pre-fill in the rule editor.
     func openSettingsWindow(presetBundleID: String? = nil) {
         if let keyWindow = NSApp.keyWindow, keyWindow != settingsWindow {
             keyWindow.orderOut(nil)
@@ -87,16 +103,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate {
     }
 }
 
+// MARK: - NSWindowDelegate
+
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if (notification.object as? NSWindow) == settingsWindow {
             if AppSettings.shared.whenClosingMainWindow == .quitApp {
-                print("[macDisplayMagic] User preference set to Quit on closing main window. Terminating...")
+                print("[macDisplayMagic] User preference set to Quit on closing main window. Terminating app...")
                 NSApplication.shared.terminate(nil)
             }
         }
     }
 }
+
+// MARK: - Main Application Entry Point
 
 @main
 struct MacDisplayMagicApp: App {

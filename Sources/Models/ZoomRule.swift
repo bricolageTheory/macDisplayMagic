@@ -1,5 +1,6 @@
 import Foundation
 
+/// Action to execute on target application windows.
 public enum ZoomAction: Codable, Equatable, Hashable, CustomStringConvertible {
     case reset100
     case zoomIn(steps: Int)
@@ -17,14 +18,21 @@ public enum ZoomAction: Codable, Equatable, Hashable, CustomStringConvertible {
     }
 }
 
+/// Data model representing a zoom rule matching application, display category, hardware model, or serial number.
 public struct ZoomRule: Identifiable, Codable, Equatable {
     public var id: UUID
     public var name: String
-    public var appBundleID: String?              // nil = All Apps (Global)
-    public var displayCategory: DisplayCategory? // nil = Any Category
-    public var targetMonitorModel: String?       // nil = Any Model in Category
-    public var targetMonitorSerial: String?      // nil = Any Serial
+    /// Target application bundle ID (`nil` matches All Applications).
+    public var appBundleID: String?
+    /// Display category filter (`nil` matches Any Display Category).
+    public var displayCategory: DisplayCategory?
+    /// Hardware monitor model name filter (`nil` matches Any Model).
+    public var targetMonitorModel: String?
+    /// Hardware monitor serial number filter (`nil` matches Any Serial).
+    public var targetMonitorSerial: String?
+    /// Action to execute when rule triggers.
     public var action: ZoomAction
+    /// Toggle switch state.
     public var isEnabled: Bool
 
     public init(

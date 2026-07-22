@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import Foundation
 
+/// Model representing a running or preset application with name, bundle identifier, and icon.
 public struct AppPreset: Identifiable, Hashable {
     public var id: String { bundleID }
     public let name: String
@@ -15,12 +16,20 @@ public struct AppPreset: Identifiable, Hashable {
     }
 }
 
+/// Reactive catalog service managing running applications, app icon warm-caching, and preset definitions.
 public final class AppCatalog: ObservableObject {
     public static let shared = AppCatalog()
 
+    // MARK: - Published Properties
+    
     @Published public var runningApps: [AppPreset] = []
+    
+    // MARK: - Cache & Storage
+    
     private var iconCache = NSCache<NSString, NSImage>()
 
+    // MARK: - Known Application Presets
+    
     public static let knownPresets: [AppPreset] = [
         AppPreset(name: "Google Chrome", bundleID: "com.google.Chrome"),
         AppPreset(name: "Safari", bundleID: "com.apple.Safari"),
@@ -34,14 +43,20 @@ public final class AppCatalog: ObservableObject {
         AppPreset(name: "Slack", bundleID: "com.tinyspeck.slackmacgap")
     ]
 
+    // MARK: - Initialization
+    
     public init() {
         refreshRunningApps()
     }
 
+    /// Pre-warms the application catalog and icon memory cache at startup.
     public static func warmUpCache() {
         shared.refreshRunningApps()
     }
 
+    // MARK: - Application Discovery
+    
+    /// Queries active regular user applications running on macOS and updates the published `runningApps` list.
     public func refreshRunningApps() {
         let apps = NSWorkspace.shared.runningApplications.filter {
             $0.activationPolicy == .regular && $0.bundleIdentifier != nil && $0.bundleIdentifier != Bundle.main.bundleIdentifier
@@ -63,6 +78,9 @@ public final class AppCatalog: ObservableObject {
         }
     }
 
+    // MARK: - Icon Extraction & Caching
+    
+    /// Fetches and returns a 12x12 resized native icon for the specified bundle identifier from memory cache or workspace.
     public func icon(for bundleID: String) -> NSImage? {
         let key = bundleID as NSString
         if let cached = iconCache.object(forKey: key) {
@@ -89,6 +107,7 @@ public final class AppCatalog: ObservableObject {
         return shared.icon(for: bundleID)
     }
 
+    /// Resolves human-readable display name for an application bundle identifier.
     public static func displayName(for bundleID: String) -> String {
         if let match = shared.runningApps.first(where: { $0.bundleID == bundleID }) {
             return match.name
@@ -99,9 +118,11 @@ public final class AppCatalog: ObservableObject {
         return bundleID
     }
 
+    // MARK: - Helper Methods
+    
     private func resizedIcon(_ original: NSImage?, targetSize: NSSize = NSSize(width: 12, height: 12)) -> NSImage? {
         guard let original = original else { return nil }
-        let copy = original.copy() as! NSImage
+        guard let copy = original.copy() as? NSImage else { return nil }
         copy.size = targetSize
         return copy
     }

@@ -1,22 +1,32 @@
-import Foundation
-import Combine
 import AppKit
+import Combine
+import Foundation
 
+/// Reactive store managing persistent zoom rules, UserDefaults serialization, and evaluation decision tree.
 public final class RulesStore: ObservableObject {
     public static let shared = RulesStore()
 
+    // MARK: - Published Properties
+    
     @Published public var rules: [ZoomRule] = [] {
         didSet {
             saveRules()
         }
     }
 
+    // MARK: - Constants
+    
     private let storageKey = "macDisplayMagic.userRules"
 
+    // MARK: - Initialization
+    
     public init() {
         loadRules()
     }
 
+    // MARK: - Persistence Methods
+    
+    /// Loads saved rules from UserDefaults or initializes default fallback rules.
     public func loadRules() {
         if let data = UserDefaults.standard.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode([ZoomRule].self, from: data) {
@@ -26,12 +36,14 @@ public final class RulesStore: ObservableObject {
         }
     }
 
+    /// Persists current user rules array to UserDefaults as JSON.
     public func saveRules() {
         if let data = try? JSONEncoder().encode(rules) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
     }
 
+    /// Default rule set shipped out-of-the-box with macDisplayMagic.
     public static func defaultRules() -> [ZoomRule] {
         return [
             ZoomRule(
@@ -67,16 +79,28 @@ public final class RulesStore: ObservableObject {
         ]
     }
 
-    /// Evaluates rules according to decision hierarchy:
-    /// 1. App + Monitor Serial
-    /// 2. App + Monitor Model
+    // MARK: - Rule Evaluation Engine
+    
+    /// Evaluates rules according to strict decision hierarchy:
+    /// 1. App + Monitor Serial Number
+    /// 2. App + Monitor Model Name
     /// 3. App + Display Resolution Category
-    /// 4. Global + Monitor Serial
-    /// 5. Global + Monitor Model
+    /// 4. Global + Monitor Serial Number
+    /// 5. Global + Monitor Model Name
     /// 6. Global + Display Resolution Category
+    /// - Parameters:
+    ///   - appBundleID: Application bundle identifier (e.g. `com.google.Chrome`).
+    ///   - displayCategory: Classified category of target screen.
+    ///   - screen: Active target screen instance.
+    /// - Returns: Matching `ZoomAction` or `nil` if no rule matches.
     public func evaluateRule(appBundleID: String?, displayCategory: DisplayCategory, screen: NSScreen? = nil) -> ZoomAction? {
         let activeRules = rules.filter { $0.isEnabled }
-        let details = screen != nil ? DisplayInfoProvider.details(for: screen!) : nil
+        let details: DisplayDetails?
+        if let targetScreen = screen {
+            details = DisplayInfoProvider.details(for: targetScreen)
+        } else {
+            details = nil
+        }
 
         let targetSerial = details?.serialNumber
         let targetModel = details?.modelName
