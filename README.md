@@ -102,4 +102,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Author**: Nick Lee ([coolnickldd@gmail.com](mailto:coolnickldd@gmail.com))
+**Author**: bricolageTheory ([bricolagetheory@gmail.com](mailto:bricolagetheory@gmail.com))
