@@ -4,7 +4,32 @@
 
 **macDisplayMagic** is a lightweight, display-aware macOS utility that automatically manages application and web tab zoom levels when windows move between MacBook and external monitors and displays (4K, 5K, 8K, and UltraWide displays).
 
-💡 *Vibe-coded using Gemini 3.5 Flash (High) for testing & experimentation.*
+💡 *Vibe-coded using Gemini 3.6 Flash (High) for testing & experimentation.*
+
+---
+
+## 📸 Screenshots
+
+### Main Menu Popover
+![Main Menu Popover](Resources/screenshots/main_menu.png)
+
+### General Settings
+![General Settings](Resources/screenshots/general_settings.png)
+
+### Zoom Configuration
+![Zoom Configuration](Resources/screenshots/zoom_config.png)
+
+### Create New Zoom Rule
+![Create New Zoom Rule](Resources/screenshots/create_new_zoom_rules.png)
+
+### External Display Connection History
+![External Display Connection History](Resources/screenshots/external_display_connection_history.png)
+
+### AutoMinimize Settings
+![AutoMinimize Settings](Resources/screenshots/auto_minimize.png)
+
+### AutoMinimize Rule Configuration
+![AutoMinimize Rule Configuration](Resources/screenshots/auto_minimize_rule.png)
 
 ---
 
