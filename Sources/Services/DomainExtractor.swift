@@ -38,18 +38,27 @@ public final class DomainExtractor {
         if let title = windowTitle?.lowercased() {
             let knownDomains = AppSettings.shared.noZoomDomains
             for d in knownDomains {
-                let cleanDomain = d.lowercased().trimmingCharacters(in: .whitespaces)
-                let name = cleanDomain.replacingOccurrences(of: ".com", with: "")
-                                      .replacingOccurrences(of: ".tv", with: "")
-                                      .replacingOccurrences(of: ".org", with: "")
-                                      .replacingOccurrences(of: ".net", with: "")
+                let cleanDomain = d.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                if cleanDomain.isEmpty { continue }
+
+                // Extract core domain token (e.g. "https://www.youtube.com" -> "youtube")
+                var raw = cleanDomain
+                if let protoRange = raw.range(of: "://") {
+                    raw = String(raw[protoRange.upperBound...])
+                }
+                if raw.hasPrefix("www.") {
+                    raw = String(raw.dropFirst(4))
+                }
+
+                // Get first host segment before any dot/TLD
+                let name = raw.components(separatedBy: ".").first ?? raw
                 
                 var aliases = [name]
-                if name.contains("disneyplus") || name.contains("disney") {
+                if name.contains("disney") {
                     aliases.append("disney+")
-                    aliases.append("disney")
+                    aliases.append("disneyplus")
                 }
-                
+
                 for alias in aliases {
                     if !alias.isEmpty && title.contains(alias) {
                         return cleanDomain

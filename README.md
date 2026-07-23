@@ -1,6 +1,6 @@
 # macDisplayMagic 🖥️✨
 
-**Display-Aware Application Zoom Manager** • `v0.2.0`
+**Display-Aware Application Zoom Manager** • `v0.2.1`
 
 **macDisplayMagic** is a lightweight, display-aware macOS utility that automatically manages application and web tab zoom levels when windows move between MacBook and external monitors and displays (4K, 5K, 8K, and UltraWide displays).
 
@@ -106,6 +106,11 @@ When an application window or tab transitions to another display, **macDisplayMa
 ---
 
 ## 📋 Changelog
+
+### v0.2.1 — 2026-07-23
+- **Fixed Domain Zoom Exclusion on Screen Transitions**: Resolved bug where moving web browser windows (e.g. Safari) across displays ignored `noZoomingDomain` exclusions due to missing window title context.
+- **Enhanced Domain Extraction & Sanitization**: Improved domain matching in `DomainExtractor` to handle URL protocols (`https://`, `http://`), `www.` prefixes, and common TLDs when matching window titles for Safari and Firefox.
+- **Unit Test Coverage**: Added unit tests in `DisplayClassifierTests` verifying Safari title fallback domain matching for YouTube, Netflix, and Disney+.
 
 ### v0.2.0 — 2026-07-23
 - **Custom permanent tab navigation**: Replaced the native `TabView` (which collapses to `>>` overflow) with a fully custom pinned tab bar. All four tabs are always visible at any window width.

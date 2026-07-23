@@ -179,7 +179,7 @@ public final class WindowTracker: ObservableObject {
         if let lastScreenID = lastScreenID {
             if lastScreenID != screenID {
                 appScreenMap[pid] = screenID
-                handleWindowScreenTransition(app: app, targetScreen: currentScreen, category: screenCategory, screenID: screenID)
+                handleWindowScreenTransition(app: app, targetScreen: currentScreen, category: screenCategory, screenID: screenID, windowTitle: currentTitle)
             }
         } else {
             // Store initial screen placement for app without firing false transition
@@ -187,13 +187,13 @@ public final class WindowTracker: ObservableObject {
         }
     }
 
-    private func handleWindowScreenTransition(app: NSRunningApplication, targetScreen: NSScreen, category: DisplayCategory, screenID: String) {
+    private func handleWindowScreenTransition(app: NSRunningApplication, targetScreen: NSScreen, category: DisplayCategory, screenID: String, windowTitle: String? = nil) {
         let pid = app.processIdentifier
         let bundleID = app.bundleIdentifier ?? ""
         let isBuiltIn = CGDisplayIsBuiltin((targetScreen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) ?? 0) != 0
 
         let appName = app.localizedName ?? "Application"
-        let (isExcluded, _) = TabZoomTracker.shared.checkDomainExclusion(bundleID: bundleID, pid: pid)
+        let (isExcluded, _) = TabZoomTracker.shared.checkDomainExclusion(bundleID: bundleID, pid: pid, windowTitle: windowTitle)
 
         if isBuiltIn {
             // Returning to Built-in Retina screen: reset tracked tabs and app zoom
