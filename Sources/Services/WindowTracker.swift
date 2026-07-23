@@ -5,6 +5,7 @@ import Foundation
 
 /// Service observing active application focus, window screen placement, and tab-level zoom state.
 public final class WindowTracker: ObservableObject {
+    public static let shared = WindowTracker()
     
     // MARK: - Published 3-Level Hierarchy Attributes
     
@@ -41,6 +42,14 @@ public final class WindowTracker: ObservableObject {
 
     public func clearZoomedStates() {
         appIsZoomedMap.removeAll()
+    }
+
+    public func isAppZoomed(pid: pid_t) -> Bool {
+        return appIsZoomedMap[pid] ?? false
+    }
+
+    public func setAppZoomed(pid: pid_t, isZoomed: Bool) {
+        appIsZoomedMap[pid] = isZoomed
     }
 
     // MARK: - Tracking Loop

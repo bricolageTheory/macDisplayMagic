@@ -7,7 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate
     
     // MARK: - Properties
     
-    let windowTracker = WindowTracker()
+    let windowTracker = WindowTracker.shared
     let displayWatcher = DisplayWatcher()
     var settingsWindow: NSWindow?
 

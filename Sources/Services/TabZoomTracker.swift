@@ -48,8 +48,13 @@ public final class TabZoomTracker: ObservableObject {
         let (isExcluded, domain) = checkDomainExclusion(bundleID: bundleID, pid: pid, windowTitle: tabTitle)
         let tabID = "\(tabTitle)_\(domain ?? "nodomain")"
 
-        // If domain is on noZoomingDomain list, skip zooming and reset logic entirely
+        // If domain is on noZoomingDomain list, reset window zoom if currently zoomed by macDisplayMagic, then skip keepZooming
         if isExcluded {
+            if WindowTracker.shared.isAppZoomed(pid: pid) {
+                print("[macDisplayMagic] keepZooming: Excluded domain '\(domain ?? "")' focused in '\(appName)'. Resetting window zoom to 100%.")
+                ZoomEngine.shared.execute(action: .reset100, for: pid, appName: appName)
+                WindowTracker.shared.setAppZoomed(pid: pid, isZoomed: false)
+            }
             return
         }
 
