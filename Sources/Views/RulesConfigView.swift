@@ -7,10 +7,12 @@ public struct RulesConfigView: View {
 
     @ObservedObject var historyStore = DisplayHistoryStore.shared
 
+    @State private var selectedTab: Int = 0
     @State private var showingAddSheet = false
     @State private var editingRuleID: UUID? = nil
 
     @State private var showingAddAutoMinimizeSheet = false
+    @State private var editingAutoMinimizeRuleID: UUID? = nil
     @State private var newAutoMinimizeName: String = ""
     @State private var autoMinimizeSelectedAppIDs: Set<String> = []
     @State private var newAutoMinimizeTitlePattern: String = ""
@@ -58,29 +60,57 @@ public struct RulesConfigView: View {
         }
     }
 
+    // MARK: - Tab Definitions
+
+    private struct TabItem {
+        let index: Int
+        let label: String
+        let icon: String
+    }
+
+    private let tabs: [TabItem] = [
+        TabItem(index: 0, label: "Zoom Rules",               icon: "rectangle.3.group"),
+        TabItem(index: 1, label: "General Settings",         icon: "gearshape"),
+        TabItem(index: 2, label: "Display History",          icon: "clock.arrow.circlepath"),
+        TabItem(index: 3, label: "AutoMinimize Rules",       icon: "arrow.down.right.and.arrow.up.left"),
+    ]
+
     public var body: some View {
-        TabView {
-            zoomRulesTab
-                .tabItem {
-                    Label("Zoom Rules", systemImage: "rectangle.3.group")
+        VStack(spacing: 0) {
+            // ── Custom Tab Bar (pinned, fixed height — never clips on resize) ──
+            HStack(spacing: 0) {
+                ForEach(tabs, id: \.index) { tab in
+                    CustomTabButton(
+                        label: tab.label,
+                        icon: tab.icon,
+                        isSelected: selectedTab == tab.index
+                    ) {
+                        selectedTab = tab.index
+                    }
                 }
+            }
+            .frame(height: 44)              // fixed height: tab bar never compresses
+            .fixedSize(horizontal: false, vertical: true)
+            .background(Color(NSColor.windowBackgroundColor))
+            .layoutPriority(1)              // resolved before content area
 
-            generalSettingsTab
-                .tabItem {
-                    Label("General Settings", systemImage: "gearshape")
-                }
+            Divider()
 
-            monitorHistoryTab
-                .tabItem {
-                    Label("External Display Connection History", systemImage: "clock.arrow.circlepath")
+            // ── Tab Content (fills remaining space, shrinks on resize) ────────
+            Group {
+                switch selectedTab {
+                case 0: zoomRulesTab
+                case 1: generalSettingsTab
+                case 2: monitorHistoryTab
+                case 3: autoMinimizeTab
+                default: zoomRulesTab
                 }
-
-            autoMinimizeTab
-                .tabItem {
-                    Label("AutoMinimize Rules", systemImage: "arrow.down.right.and.arrow.up.left")
-                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .layoutPriority(0)
         }
-        .frame(width: 720, height: 520)
+        .frame(minWidth: 720, maxWidth: .infinity, minHeight: 480, maxHeight: .infinity)
+
         .sheet(isPresented: $showingAddSheet) {
             addRuleSheet
         }
@@ -740,21 +770,11 @@ public struct RulesConfigView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
-                HStack(spacing: 8) {
-                    Button(action: {
-                        LocationService.shared.fetchCurrentLocationName { resolved in
-                            print("[macDisplayMagic] Diagnostic Refresh resolved location to: \(resolved)")
-                        }
-                    }) {
-                        Label("Refresh Location & Diagnostics", systemImage: "location.circle.fill")
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button("Clear History") {
-                        historyStore.clearHistory()
-                    }
-                    .buttonStyle(.bordered)
+                Spacer()
+                Button("Clear History") {
+                    historyStore.clearHistory()
                 }
+                .buttonStyle(.bordered)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
@@ -879,9 +899,6 @@ public struct RulesConfigView: View {
         .sheet(item: $inspectingHistoryRecord) { record in
             DisplayHistoryDetailView(record: record)
         }
-        .onAppear {
-            LocationService.shared.fetchCurrentLocationName { _ in }
-        }
     }
 
     // MARK: - AutoMinimize Tab
@@ -899,9 +916,13 @@ public struct RulesConfigView: View {
                 }
                 Spacer()
                 Button(action: {
+                    // New rule: clear all form fields and open sheet in Create mode
+                    editingAutoMinimizeRuleID = nil
                     newAutoMinimizeName = ""
                     autoMinimizeSelectedAppIDs.removeAll()
                     newAutoMinimizeTitlePattern = ""
+                    autoMinimizeDisplayTargetMode = 0
+                    autoMinimizeSelectedHardwareID = ""
                     showingAddAutoMinimizeSheet = true
                 }) {
                     Label("Add AutoMinimize Rule", systemImage: "plus")
@@ -960,6 +981,15 @@ public struct RulesConfigView: View {
 
                                 Spacer()
 
+                                // Pencil edit button
+                                Button(action: {
+                                    openAutoMinimizeEditSheet(rule: rule)
+                                }) {
+                                    Image(systemName: "pencil")
+                                        .foregroundColor(.accentColor)
+                                }
+                                .buttonStyle(.plain)
+
                                 Button(action: {
                                     appSettings.autoMinimizeRules.removeAll(where: { $0.id == rule.id })
                                 }) {
@@ -969,6 +999,10 @@ public struct RulesConfigView: View {
                                 .buttonStyle(.plain)
                             }
                             .padding(.vertical, 4)
+                            // Double-click to edit
+                            .onTapGesture(count: 2) {
+                                openAutoMinimizeEditSheet(rule: rule)
+                            }
                         }
                     }
                 }
@@ -976,11 +1010,28 @@ public struct RulesConfigView: View {
         }
     }
 
-    // MARK: - Add AutoMinimize Sheet Modal
-    
+    // MARK: - AutoMinimize Edit Helper
+
+    /// Populates the sheet form fields from an existing rule and opens the sheet in Edit mode.
+    private func openAutoMinimizeEditSheet(rule: AutoMinimizeRule) {
+        editingAutoMinimizeRuleID = rule.id
+        newAutoMinimizeName = rule.name
+        autoMinimizeSelectedAppIDs = Set(rule.targetBundleIDs)
+        newAutoMinimizeTitlePattern = rule.windowTitlePattern
+        switch rule.displayTarget {
+        case .anyExternal:              autoMinimizeDisplayTargetMode = 0; autoMinimizeSelectedHardwareID = ""
+        case .unknownOnly:              autoMinimizeDisplayTargetMode = 1; autoMinimizeSelectedHardwareID = ""
+        case .knownOnly:                autoMinimizeDisplayTargetMode = 2; autoMinimizeSelectedHardwareID = ""
+        case .specific(let hwID):       autoMinimizeDisplayTargetMode = 3; autoMinimizeSelectedHardwareID = hwID
+        }
+        showingAddAutoMinimizeSheet = true
+    }
+
+    // MARK: - Add / Edit AutoMinimize Sheet Modal
+
     private var addAutoMinimizeSheet: some View {
         VStack(spacing: 16) {
-            Text("Add AutoMinimize Rule")
+            Text(editingAutoMinimizeRuleID == nil ? "Add AutoMinimize Rule" : "Edit AutoMinimize Rule")
                 .font(.headline)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -1066,11 +1117,12 @@ public struct RulesConfigView: View {
             HStack {
                 Button("Cancel") {
                     showingAddAutoMinimizeSheet = false
+                    editingAutoMinimizeRuleID = nil
                 }
 
                 Spacer()
 
-                Button("Save Rule") {
+                Button(editingAutoMinimizeRuleID == nil ? "Save Rule" : "Update Rule") {
                     let target: AutoMinimizeDisplayTarget
                     switch autoMinimizeDisplayTargetMode {
                     case 0: target = .anyExternal
@@ -1081,14 +1133,27 @@ public struct RulesConfigView: View {
                     }
 
                     let ruleName = newAutoMinimizeName.trimmingCharacters(in: .whitespaces).isEmpty ? "AutoMinimize Rule" : newAutoMinimizeName
-                    let rule = AutoMinimizeRule(
-                        name: ruleName,
-                        targetBundleIDs: Array(autoMinimizeSelectedAppIDs),
-                        windowTitlePattern: newAutoMinimizeTitlePattern.trimmingCharacters(in: .whitespaces),
-                        displayTarget: target,
-                        isEnabled: true
-                    )
-                    appSettings.autoMinimizeRules.append(rule)
+
+                    if let editID = editingAutoMinimizeRuleID,
+                       let index = appSettings.autoMinimizeRules.firstIndex(where: { $0.id == editID }) {
+                        // Update existing rule in-place, preserving its ID and enabled state
+                        appSettings.autoMinimizeRules[index].name = ruleName
+                        appSettings.autoMinimizeRules[index].targetBundleIDs = Array(autoMinimizeSelectedAppIDs)
+                        appSettings.autoMinimizeRules[index].windowTitlePattern = newAutoMinimizeTitlePattern.trimmingCharacters(in: .whitespaces)
+                        appSettings.autoMinimizeRules[index].displayTarget = target
+                    } else {
+                        // Create new rule
+                        let rule = AutoMinimizeRule(
+                            name: ruleName,
+                            targetBundleIDs: Array(autoMinimizeSelectedAppIDs),
+                            windowTitlePattern: newAutoMinimizeTitlePattern.trimmingCharacters(in: .whitespaces),
+                            displayTarget: target,
+                            isEnabled: true
+                        )
+                        appSettings.autoMinimizeRules.append(rule)
+                    }
+
+                    editingAutoMinimizeRuleID = nil
                     showingAddAutoMinimizeSheet = false
                 }
                 .buttonStyle(.borderedProminent)
@@ -1100,7 +1165,52 @@ public struct RulesConfigView: View {
     }
 }
 
+// MARK: - Custom Tab Button
+
+/// A permanently-visible navigation tab button used in the custom tab bar.
+///
+/// Unlike macOS's native `TabView` tab bar, this button never overflows to a `>>` menu —
+/// all tabs are always visible. The active tab is indicated by a full-width accent-colour
+/// bottom border and bold label. Inactive tabs show a subtle hover highlight.
+private struct CustomTabButton: View {
+    let label: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    @State private var isHovered: Bool = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                Text(label)
+                    .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+            }
+            .foregroundColor(isSelected ? .accentColor : (isHovered ? .primary : .secondary))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            // Accent underline pinned to the bottom edge of the fixed-height bar
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(isSelected ? Color.accentColor : Color.clear)
+                    .frame(height: 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .background(isHovered && !isSelected ? Color.secondary.opacity(0.08) : Color.clear)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
 public struct DisplayHistoryDetailView: View {
+
     public let record: DisplayHistoryRecord
     @ObservedObject var historyStore = DisplayHistoryStore.shared
     @State private var customNicknameInput: String = ""

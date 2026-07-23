@@ -10,20 +10,21 @@ MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
 echo "==> Creating Application Bundle ($APP_DIR)..."
+rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR"
 mkdir -p "$RESOURCES_DIR"
 
 cp .build/release/macDisplayMagic "$MACOS_DIR/macDisplayMagic"
 
-# Check for PNG application icon in Resources/ or project root
-ICON_SRC=""
-if [ -f "Resources/AppIcon.png" ]; then
+# Icon handling: prefer a hand-crafted AppIcon.icns from Resources/ (used as-is, no resampling).
+# Falls back to converting AppIcon.png if no pre-built .icns is found.
+if [ -f "Resources/AppIcon.icns" ]; then
+    echo "==> Using pre-built Resources/AppIcon.icns directly (no PNG conversion)."
+    cp "Resources/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
+    echo "==> AppIcon.icns bundled successfully."
+elif [ -f "Resources/AppIcon.png" ] || [ -f "AppIcon.png" ]; then
     ICON_SRC="Resources/AppIcon.png"
-elif [ -f "AppIcon.png" ]; then
-    ICON_SRC="AppIcon.png"
-fi
-
-if [ -n "$ICON_SRC" ]; then
+    [ -f "AppIcon.png" ] && ICON_SRC="AppIcon.png"
     echo "==> Converting $ICON_SRC to macOS AppIcon.icns..."
     ICONSET_DIR="dist/AppIcon.iconset"
     rm -rf "$ICONSET_DIR"
@@ -63,9 +64,9 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.0</string>
+    <string>0.2.0</string>
     <key>CFBundleVersion</key>
-    <string>1.1.0</string>
+    <string>0.2.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>
@@ -80,6 +81,7 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
 </plist>
 EOF
 
+touch "$APP_DIR"
 echo "==> App Bundle built successfully at $APP_DIR"
 
 INSTALL_APP=false

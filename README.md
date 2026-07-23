@@ -1,14 +1,10 @@
 # macDisplayMagic 🖥️✨
 
-**Display-Aware Application Zoom Manager** • `v1.1.0`
+**Display-Aware Application Zoom Manager** • `v0.2.0`
 
 **macDisplayMagic** is a lightweight, display-aware macOS utility that automatically manages application and web tab zoom levels when windows move between MacBook Retina displays and high-density external monitors (4K, 5K, 8K, and UltraWide displays).
 
-💡 *Vibe-coded using Gemini 3.5 Flash (High) for testing & experimentation.* 
-
-<p align="center">
-  <img src="Resources/main_menu.png" width="360" alt="macDisplayMagic Main Menu Interface">
-</p>
+💡 *Vibe-coded using Gemini 3.5 Flash (High) for testing & experimentation.*
 
 ---
 
@@ -20,16 +16,11 @@
 - 🌐 **Continuous Tab Zooming (`keepZooming`)**: Intercepts tab switches inside multi-tab web browsers (Google Chrome, Safari, Firefox, Arc, Brave) and applies display zoom to newly focused tabs.
 - 🚫 **Domain Zoom Exclusions (`noZoomingDomain`)**: Define exclusion lists for media streaming or specific web domains (e.g. `netflix.com`, `youtube.com`, `disneyplus.com`) to bypass auto-zooming.
 - ⚡ **Non-Blocking Async Domain Extraction**: High-performance targeted Accessibility queries (`kAXDocumentAttribute` / `kAXURLAttribute`) executed on a background queue, guaranteeing 0ms main thread UI latency.
-- 🛰️ **Location Provenance & Connection Logs**: Logs physical display connection events tagged with location metadata and visual provenance icons:
-  - 🛰️ **GPS / CoreLocation**: Physical GPS coordinates & city resolution.
-  - 🌐 **Network IP**: GeoIP network location fallback.
-  - 🕒 **System Timezone**: System timezone location fallback.
-  - ❓ **Pending Approval**: Awaiting macOS location permission.
-  - 🚫 **Disabled**: Location tracking disabled by user.
-  Includes a **LOCATION SOURCE LEGENDS** bar and detailed inspector diagnostics card.
-- 🔬 **Full-Tree IOKit Hardware Inspector**: Reads monitor EDID attributes, serial numbers, manufacturer details, refresh rates (60 Hz, 120 Hz ProMotion), rotation orientation, and maps chassis codes to retail model names (e.g. `LG HDR 4K (32UP83A / 32UN880 / 32UN88)`).
+- 🛰️ **Location Provenance & Connection Logs**: Logs physical display connection events tagged with location metadata and visual provenance icons (GPS, Network IP, System Timezone).
+- 🔬 **Full-Tree IOKit Hardware Inspector**: Reads monitor EDID attributes, serial numbers, manufacturer details, refresh rates, and maps chassis codes to retail model names.
 - 🏷️ **Hardware & Serial Specific Zoom Rules**: Target rules to broad resolution categories (e.g. `4K UHD`, `Built-in Retina`) or restrict rules to specific physical monitor models and serial numbers.
-- 💻 **Auto-Minimize Windows on Connection**: Automatically minimize open windows of designated applications when connecting to specific external monitors.
+- 💻 **AutoMinimize Rules**: Automatically minimize open windows of designated applications when connecting to specific external monitors — fully editable via double-click.
+- 🪟 **Resizable Settings Window**: The settings panel is fully resizable with macOS native drag handles; all four navigation tabs remain permanently visible at any window size.
 
 ---
 
@@ -66,7 +57,7 @@ When an application window or tab transitions to another display, **macDisplayMa
    ```bash
    bash build_app.sh --install
    ```
-   *(Compiles high-DPI `AppIcon.icns`, builds `macDisplayMagic.app`, installs to `/Applications`, and registers with macOS Launch Services.)*
+   *(Bundles `AppIcon.icns`, compiles the Swift sources, installs `macDisplayMagic.app` to `/Applications`, and registers with macOS Launch Services.)*
 
 3. **Launch the Application**:
    ```bash
@@ -86,6 +77,22 @@ When an application window or tab transitions to another display, **macDisplayMa
 
 - **Language & Frameworks**: Swift, SwiftUI, AppKit, CoreGraphics, CoreLocation, IOKit, ServiceManagement
 - **Storage Isolation**: Local `UserDefaults` storage (`~/Library/Preferences/com.nicklee.macDisplayMagic.plist`) ensures personal connection logs and custom rules are never pushed to Git.
+
+---
+
+## 📋 Changelog
+
+### v0.2.0 — 2026-07-23
+- **Custom permanent tab navigation**: Replaced the native `TabView` (which collapses to `>>` overflow) with a fully custom pinned tab bar. All four tabs are always visible at any window width.
+- **Resizable settings window**: Settings panel now supports native macOS window resizing. Opens at 860×580, minimum content area 720×480.
+- **AutoMinimize double-click editing**: AutoMinimize rules can now be opened for editing by double-clicking the row or clicking the pencil button. Sheet title and Save button toggle between Add/Edit mode.
+- **Tab bar size fix**: Corrected `NSWindow.contentMinSize` vs `minSize` mismatch that caused the tab bar to visually compress when the window approached its minimum height.
+- **Uniform menu popover padding**: Fixed asymmetric bottom padding in the menu bar popover by switching to a single `.padding()` call covering all four sides equally.
+- **Removed "Refresh Location & Diagnostics" button**: Feature removed; `LocationService` is still used internally for automatic monitor connection geo-tagging.
+- **Project cleanup**: Removed unused backup files (`AppIcon.icns.bak`, `AppIcon.icns.old`, `main_menu.png`), dead code (`stopListening`, unused `AccessibilityManager` methods, `previousScreenCount`), and applied industry-standard doc-comments throughout core services.
+
+### v0.1.0
+- Initial public release with zoom rule engine, display monitoring, AutoMinimize, and location-tagged connection history.
 
 ---
 

@@ -99,6 +99,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, DisplayWatcherDelegate
             let window = NSWindow(contentViewController: hostingController)
             window.title = "macDisplayMagic Settings"
             window.styleMask = NSWindow.StyleMask([.titled, .closable, .resizable, .miniaturizable])
+            window.setContentSize(NSSize(width: 860, height: 580))   // initial content area size
+            window.contentMinSize = NSSize(width: 720, height: 480)  // content area minimum (excludes title bar)
             window.center()
             window.isReleasedWhenClosed = false
             window.delegate = self

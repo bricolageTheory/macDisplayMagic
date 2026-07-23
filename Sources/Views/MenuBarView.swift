@@ -380,9 +380,8 @@ public struct MenuBarView: View {
                 .buttonStyle(.bordered)
             }
         }
-        .padding(.horizontal, p.outerPaddingHorizontal)
-        .padding(.vertical, p.outerPaddingVertical)
-        .frame(width: p.containerWidth)
+        .padding(p.outerPaddingHorizontal)
+        .frame(width: p.containerWidth + p.outerPaddingHorizontal * 2)
         .onAppear {
             accessibilityManager.refreshStatus()
         }
